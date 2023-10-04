@@ -1,0 +1,96 @@
+# run
+setting: 'qm9str'
+
+# wandb
+wandb_mode: 'online'   # 'online', 'disabled'
+wandb_project: 'sub_qm9'
+wandb_entity: 'gflownet-silab'
+
+
+# model learning
+lr_z: 1.0e-2
+lr_policy: 1.0e-4
+lr_critic: 1.0e-4
+lr_logF: 1.0e-4
+clip_policy_logit_min: -50.0
+clip_policy_logit_max: 50.0
+clip_grad_norm: 10.0
+clip_param: 0.2
+entropy_coef: 0.01
+sql_alpha: 0.01
+model: 'subtb' # choices=['sub', 'maxent', 'random', 'tb', 'db', 'subtb']
+lamda: 0.9
+guide: 'substructure' # choices=['substructure', 'uniform']
+init_logz: True
+# CAREFUL - guide_scores_back_policy_traj can have high variance in 
+# training losses because trajectorie sampled under back policy can have
+# extremely low logp under guide 
+# choices=['guide_scores_back_policy_traj', 'guide_resamples_traj'])
+offline_style: 'guide_resamples_traj' 
+offline_select: 'prt'
+
+sa_or_ssr: 'ssr'
+
+# model architecture
+# inp_dim is specified by mdp
+ssr_encoder_hid_dim: 1024
+ssr_encoder_n_layers: 1
+ssr_embed_dim: 1024
+ssr_scorer_hid_dim: 1024
+ssr_scorer_n_layers: 1
+sa_hid_dim: 1024
+sa_n_layers: 2
+
+# trainer
+num_active_learning_rounds: 2000
+num_samples_per_online_batch: 32
+num_samples_per_offline_batch: 32
+
+num_steps_per_batch: 1
+num_online_batches_per_round: 1
+num_offline_batches_per_round: 1
+target_mix_backpolicy_weight: 0.5
+
+# policy
+explore_epsilon: 0.10
+
+# guide
+parallelize: True
+num_guide_workers: 8
+
+# experiment
+replicate: 0
+saved_models_dir: 'saved_models/qm9str/'
+save_every_x_active_rounds: 500
+
+# monitor
+monitor_num_samples: 128
+monitor_fast_every: 10
+monitor_slow_every: 200
+
+# reward
+scale_reward_min: 0.001
+scale_reward_max: 100
+beta: 5
+
+guide_sampling_temperature: 1.0
+
+# experiment-specific settings
+blocks_file: datasets/qm9str/block_qm9str_v1.json
+x_to_r_file: datasets/qm9str/block_qm9str_v1_s5.pkl
+mode_info_file: datasets/qm9str/mode_info.pkl
+mode_metric: 'default' # div_threshold_05, div_threshold_075 
+forced_stop_len: 5
+
+# local search related arguments
+ls: false
+deterministic: false
+k: 3
+i: 7
+
+# checkpointing
+ckpt: -1
+eval_num_samples: 2048
+
+# reproduction
+seed: 0

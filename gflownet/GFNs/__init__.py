@@ -1,0 +1,1 @@
+from .basegfn import BaseTBGFlowNet

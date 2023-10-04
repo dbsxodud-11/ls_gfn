@@ -1,0 +1,11 @@
+.vscode
+__pycache__
+
+# large data files
+block_18_stop6.pkl
+sehstr_gbtr_allpreds.pkl
+
+logs/
+wandb/
+saved_models/
+temp/
