@@ -486,7 +486,7 @@ class BasePolicySSR:
       
       batches.append(values)
       batch_dicts.append(state_to_logp)
-    return batches
+    return batches, batch_dicts
 
   def serial_values_unique(self, batch):
     batches = []
@@ -501,7 +501,7 @@ class BasePolicySSR:
       
       batches.append(values)
       batch_dicts.append(state_to_logp)
-    return batches
+    return batches, batch_dicts
   
   """
     sample

@@ -3,7 +3,6 @@ import numpy as np
 from scipy.stats import anderson_ksamp
 from polyleven import levenshtein
 
-import pickle
 import torch
 import wandb
 
@@ -13,18 +12,12 @@ from gflownet.utils import tensor_to_np
 """
   Diversity
 """
-# def mean_pair_diversity(data, dist_func):
-#   """ Average pairwise distance between data.
-#       data: List of States
-#   """
-#   dists = [dist_func(*pair) for pair in itertools.combinations(data, 2)]
-#   return sum(dists) / len(dists)
 
 def diversity(data, dist_func=levenshtein):
   """ Average pairwise distance between data. """
   dists = [dist_func(*pair) for pair in itertools.combinations(data, 2)]
   n = len(data)
-  return sum(dists) / (n*(n-1))
+  return sum(dists) / (n*(n-1) + 1e-8)
 
 
 def novelty(new_data, old_data, dist_func=levenshtein):
@@ -36,32 +29,6 @@ def multi_set_distance(ms1, ms2):
   """ Distance between two multisets. Assumes that all sets are same length. """
   n = len(ms1)
   return n - len(ms1 & ms2)
-
-
-"""
-  Statistics
-"""
-def anderson_darling(sampled_rs, expected_rs):
-  """ Compute Anderson-Darling statistic, normalized
-      to p=0.05 threshold.
-
-      Lower statistic (is better) means we accept the null hypothesis (p > 0.05)
-      that the distributions are the same.
-      above 1 means p < 0.05 - less than 5% chance the distributions are the same
-      below 1 means p > 0.05 - more than 5% chance the distributions are the same
-      Statistic can be negative.
-
-      Parameters
-      ----------
-      sampled_rs: List
-        A list of sampled reward floats
-      expected_rs: List
-        A list of reward floats from the target reward distribution
-  """
-  ad, crits, _ = anderson_ksamp([sampled_rs, expected_rs])
-  ad_score = ad / crits[2]
-  return ad_score
-
 
 """
   Target distribution
@@ -82,7 +49,6 @@ class TargetRewardDistribution:
           statistic.
     """
     self.expected_reward = None
-    self.ad_samples = []
 
   def init_from_base_rewards(self, base_rs):
     """ Compute target reward distribution statistics.
@@ -94,17 +60,8 @@ class TargetRewardDistribution:
     z = sum(base_rs)
     expr = sum([r**2 for r in base_rs]) / z
     self.expected_reward = expr
-    self.ad_samples = np.random.choice(base_rs,
-                                       size=min(len(base_rs), 100000),
-                                       p=np.array(base_rs)/z)
     print(f'Expected reward: {expr}')
     return
-  
-  def init_from_file(self, monitor_info_file):
-    with open(monitor_info_file, "rb") as f:
-      data = pickle.load(f)
-    self.expected_reward = data['expected_reward']
-    self.ad_samples = data['ad_samples']
 
 
 class Monitor:
@@ -122,15 +79,24 @@ class Monitor:
     self.callback = callback
     self.unnormalize = unnormalize
     self.sample_log = dict()
-    self.NUM_ROUNDS_BACK = 25
+    self.NUM_ROUNDS_BACK = 1
     self.FAST_EVAL_EVERY = self.args.get('monitor_fast_every', 5)
     self.SLOW_EVAL_EVERY = self.args.get('monitor_slow_every', 200)
     
   def log_samples(self, round_num, samples):
     """ Logs samples. """
     self.sample_log[round_num] = samples
-    # print(f'Logging. {round_num=}, {len(self.sample_log)=}')
     return
+  
+  def log_real_samples(self, allXtoR):
+    name = "Real"
+    tolog = dict()
+    if self.is_mode_f is not None:
+      unique_modes = set(x for x, r in allXtoR.items() if self.is_mode_f(x, r))
+      tolog.update({
+        f'{name} - Num modes': len(unique_modes),
+      })
+    return tolog
 
   def maybe_eval_samplelog(self, model, round_num, allXtoR):
     """ Evaluate model using sample log:
@@ -149,6 +115,9 @@ class Monitor:
     ]
     for d in ds:
       tolog.update(d)
+      
+    if self.args.monitor_real_samples:
+      tolog.update(self.log_real_samples(allXtoR))
 
     for k, v in tolog.items():
       print(f'\t{k}:\t{v}')
@@ -221,8 +190,8 @@ class Monitor:
       f'{name} - median': np.median(rewards),
       f'{name} - 25th percentile': np.percentile(rewards, 25),
       f'{name} - 75th percentile': np.percentile(rewards, 75),
-      # f'{name} - x': [str(x) for x in xs],
-      # f'{name} - rewards': rewards,
+      f'{name} - 90th percentile': np.percentile(rewards, 90),
+      f'{name} - 95th percentile': np.percentile(rewards, 95),
     })
 
     if self.is_mode_f is not None:
@@ -231,20 +200,19 @@ class Monitor:
         f'{name} - Num modes': len(unique_modes),
       })
     
-    # if name == 'recent' and log_slow:
-    #   tolog.update({
-    #     f'{name} - diversity': diversity(xs, self.dist_func),
-    #   })
+    if name == 'recent':
+      tolog.update({
+        f'{name} - diversity': diversity(xs, self.dist_func),
+      })
 
     # Stats comparing sampled reward to target reward distribution
     if len(scaled_rewards) > 0:
-      mean_diff = np.mean(scaled_rewards) - self.target.expected_reward 
+      mean_diff = np.mean(rewards) - self.target.expected_reward
       rel_error = mean_diff / self.target.expected_reward
-      ad_score = anderson_darling(scaled_rewards, self.target.ad_samples)
-      tolog[f'{name} - Anderson-Darling statistic'] = ad_score
       tolog[f'{name} - mean error to target'] = mean_diff
       tolog[f'{name} - mean sq error to target'] = mean_diff**2
       tolog[f'{name} - relative mean error to target'] = rel_error
+      tolog[f'{name} - target expected reward'] = self.target.expected_reward
 
     if self.callback:
       tolog.update(self.callback(xs, rewards, allXtoR))
@@ -277,6 +245,7 @@ class Monitor:
 
     tolog = {
       'TopK performance': np.mean([self.unnormalize(r) for r in rs]),
+      'TopK performance (Scaled)': np.mean(rs),
     }
     if log_slow:
       tolog.update({

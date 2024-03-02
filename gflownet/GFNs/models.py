@@ -342,27 +342,30 @@ class SubstructureGFN(BaseTBGFlowNet):
 
 
 def make_model(args, mdp, actor):
-  """ Constructs MaxEnt / TB / Sub GFN. """
-  if args.model == 'maxent':
-    model = MaxEntGFN(args, mdp, actor)
-  elif args.model == 'tb':
-    model = TBGFN(args, mdp, actor)
-  elif args.model == "subtb":
-    model = SubTBGFN(args, mdp, actor)
-  elif args.model == 'db':
-    model = DBGFN(args, mdp, actor)
-  elif args.model == 'gtb':
-    model = SubstructureGFN(args, mdp, actor)
-  elif args.model == 'random':
-    args.explore_epsilon = 1.0
-    args.num_offline_batches_per_round = 0
-    model = Empty(args, mdp, actor)
+  """ Constructs Model. """
+  if args.model == "gfn":
+    if args.loss_type == "tb":
+      model = TBGFN(args, mdp, actor)
+    elif args.loss_type == "maxent":
+      model = MaxEntGFN(args, mdp, actor)
+    elif args.loss_type == "db":
+      model = MaxEntGFN(args, mdp, actor)
+    elif args.loss_type == "subtb":
+      model = MaxEntGFN(args, mdp, actor)
+    elif args.loss_type == "gtb":
+      model = SubstructureGFN(args, mdp, actor)
+    else:
+      raise NotImplementedError
+  elif args.model == "mars":
+    model = MARS(args, mdp, actor)
   elif args.model == 'a2c':
     model = A2C(args, mdp, actor)
   elif args.model == "ppo":
     model = PPO(args, mdp, actor)
   elif args.model == 'sql':
     model = SoftQLearning(args, mdp, actor)
-  elif args.model == 'mars':
-    model = MARS(args, mdp, actor)
+  else:
+    raise NotImplementedError
   return model
+    
+    

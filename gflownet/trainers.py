@@ -19,7 +19,7 @@ class Trainer:
     self.monitor = monitor
 
   def learn(self, *args, **kwargs):
-    if self.args.model == 'gtb':
+    if self.args.loss_type == 'gtb':
       print(f'Learning with ray guide workers ...')
       self.learn_with_ray_workers(*args, **kwargs)
     else:
@@ -74,15 +74,23 @@ class Trainer:
       # Online training - skip first if initial dataset was provided
       if not initial_XtoR or round_num > 0:
         for _ in range(num_online):
-          if self.args.ls:
-            if self.args.deterministic:
-              with torch.no_grad():
-                explore_data = self.model.batch_fwd_sample_ls(online_bsize,
-                  epsilon=self.args.explore_epsilon, k=self.args.k, i=self.args.i, deterministic=True)
+          # gfn methods
+          if self.args.model == "gfn":
+            if self.args.ls:
+              if self.args.filtering == "deterministic":
+                with torch.no_grad():
+                  explore_data = self.model.batch_fwd_sample_ls(online_bsize,
+                    epsilon=self.args.explore_epsilon, k=self.args.num_back_forth_steps, i=self.args.num_iterations, deterministic=True)
+              else:
+                with torch.no_grad():
+                  explore_data = self.model.batch_fwd_sample_ls(online_bsize,
+                    epsilon=self.args.explore_epsilon, k=self.args.num_back_forth_steps, i=self.args.num_iterations, deterministic=False)
             else:
               with torch.no_grad():
-                explore_data = self.model.batch_fwd_sample_ls(online_bsize,
-                  epsilon=self.args.explore_epsilon, k=self.args.k, i=self.args.i, deterministic=False)
+                explore_data = self.model.batch_fwd_sample(online_bsize,
+                    epsilon=self.args.explore_epsilon)
+          
+          # other reward-maximization methods
           elif self.args.model == "mars":
             with torch.no_grad():
               if len(total_samples) == 0:
@@ -117,7 +125,6 @@ class Trainer:
       # Offline training
       for _ in range(num_offline):
         if self.args.model == "a2c" or self.args.model == "sql":
-          # we do not use PRT for RL-based methods
           # As A2C and SQL are off-policy algorithm, we double offline training steps
           offline_dataset = random.choices(total_samples, k=offline_bsize)
           for step_num in range(self.args.num_steps_per_batch * 2):
@@ -135,13 +142,14 @@ class Trainer:
           for step_num in range(self.args.num_steps_per_batch):
             self.model.train(offline_dataset)
 
+      # Monitor
       if round_num % monitor_fast_every == 0 and round_num > 0:
-        truepolicy_data = self.model.batch_fwd_sample(monitor_num_samples,
-              epsilon=0)
+        truepolicy_data = self.model.batch_fwd_sample(monitor_num_samples, epsilon=0)
         self.monitor.log_samples(round_num, truepolicy_data)
 
       self.monitor.maybe_eval_samplelog(self.model, round_num, allXtoR)
 
+      # Save
       if round_num and round_num % self.args.save_every_x_active_rounds == 0:
         self.model.save_params(self.args.saved_models_dir + \
                                self.args.run_name + "/" + f'round_{round_num}.pth')
@@ -196,14 +204,14 @@ class Trainer:
       if not initial_XtoR or round_num > 0:
         for _ in range(num_online):
           if self.args.ls:
-            if self.args.deterministic:
+            if self.args.filtering == "deterministic":
               with torch.no_grad():
                 explore_data = self.model.batch_fwd_sample_ls(online_bsize,
-                  epsilon=self.args.explore_epsilon, k=self.args.k, i=self.args.i, deterministic=True)
+                  epsilon=self.args.explore_epsilon, k=self.args.num_back_forth_steps, i=self.args.num_iterations, deterministic=True)
             else:
               with torch.no_grad():
                 explore_data = self.model.batch_fwd_sample_ls(online_bsize,
-                  epsilon=self.args.explore_epsilon, k=self.args.k, i=self.args.i, deterministic=False)
+                  epsilon=self.args.explore_epsilon, k=self.args.num_back_forth_steps, i=self.args.num_iterations, deterministic=False)
           else:
             with torch.no_grad():
               explore_data = self.model.batch_fwd_sample(online_bsize,
@@ -242,8 +250,7 @@ class Trainer:
 
       # 5. End of active round - monitor and save
       if round_num % monitor_fast_every == 0 and round_num > 0:
-        truepolicy_data = self.model.batch_fwd_sample(monitor_num_samples,
-              epsilon=0)
+        truepolicy_data = self.model.batch_fwd_sample(monitor_num_samples, epsilon=0)
         self.monitor.log_samples(round_num, truepolicy_data)
 
       # Save to full dataset & log to monitor
@@ -274,10 +281,9 @@ class Trainer:
     Offline training
   """
   def select_offline_xs(self, allXtoR, batch_size):
-    select = self.args.get('offline_select', 'prt')
-    if select == 'prt':
+    if self.args.prt:
       return self.__biased_sample_xs(allXtoR, batch_size)
-    elif select == 'random':
+    else:
       return self.__random_sample_xs(allXtoR, batch_size)
 
   def __biased_sample_xs(self, allXtoR, batch_size):

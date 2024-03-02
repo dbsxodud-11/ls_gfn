@@ -42,7 +42,7 @@ class SoftQLearning():
         return self.model.logps_unique(batch)
     
     def fwd_values_unique(self, batch):
-        return self.model.values(batch)
+        return self.model.values_unique(batch)
     
     def batch_fwd_sample(self, n, epsilon=0.0, uniform=False):
         """ Batch samples dataset with n items.

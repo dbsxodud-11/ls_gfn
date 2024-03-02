@@ -12,7 +12,7 @@ def parse_setting():
       Looks for --setting val or --setting=val. 
   """
   argparser = argparse.ArgumentParser()
-  argparser.add_argument(f'--setting', type=str)
+  argparser.add_argument('--setting', type=str)
   args, unknown = argparser.parse_known_args()
   return args.setting
 
@@ -29,20 +29,18 @@ def parse_args():
       5. Use args = AttrDict(wandb.config) in code
   """
   setting_folds = {
-    'bag': 'exps/bag/',
-    'tfbind8': 'exps/tfbind8/',
-    'tfbind10': 'exps/tfbind10/',
-    'qm9str': 'exps/qm9str/',
-    'sehstr': 'exps/sehstr/',
-    'gfp': 'exps/gfp/',
-    'utr': 'exps/utr/',
-    'rna': 'exps/rna/'
+    'qm9str': 'exps/qm9str/settings.yaml',
+    'sehstr': 'exps/sehstr/settings.yaml',
+    'tfbind8': 'exps/tfbind8/settings.yaml',
+    'rna1': 'exps/rna/settings.yaml',
+    'rna2': 'exps/rna/settings.yaml',
+    'rna3': 'exps/rna/settings.yaml'
   }
 
   # 1. Read setting from sys.argv
   setting = parse_setting()
 
-  config_yaml = setting_folds[setting] + 'settings.yaml'
+  config_yaml = setting_folds[setting]
   print(f'Reading hyperparameters from {config_yaml} ...')
   with open(config_yaml) as f:
     default_args = yaml.load(f, Loader=yaml.FullLoader)
@@ -50,7 +48,13 @@ def parse_args():
   # 2. Populate argparser and read user CLI args
   argparser = argparse.ArgumentParser()
   for arg, val in default_args.items():
-    argparser.add_argument(f'--{arg}', default=val, type=type(val))
+    if type(val) == bool:
+      if val == True:
+        argparser.add_argument(f'--{arg}', action="store_false")
+      else:
+        argparser.add_argument(f'--{arg}', action="store_true")
+    else:
+      argparser.add_argument(f'--{arg}', default=val, type=type(val))
   parsed_args = AttrDict(vars(argparser.parse_args()))
   return parsed_args
 
