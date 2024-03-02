@@ -23,7 +23,7 @@ We also implement various state-of-the-art baselines including RL approaches (A2
 
 ### Large files
 
-You can download additional large files by following link: https://drive.google.com/drive/folders/1JobUWGowoiQxGWVz3pipdfcjhtdY4CVq?usp=sharing
+You can download additional large files by following link: [https://drive.google.com/drive/folders/1JobUWGowoiQxGWVz3pipdfcjhtdY4CVq?usp=sharing](https://drive.google.com/drive/folders/1zc9U5oWATEMps-FrmI_VPm7HBinZiKH-?usp=drive_link)
 
 These files should be placed in `datasets`
 
