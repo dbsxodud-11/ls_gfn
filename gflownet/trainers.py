@@ -80,11 +80,11 @@ class Trainer:
               if self.args.filtering == "deterministic":
                 with torch.no_grad():
                   explore_data = self.model.batch_fwd_sample_ls(online_bsize,
-                    epsilon=self.args.explore_epsilon, k=self.args.num_back_forth_steps, i=self.args.num_iterations, deterministic=True)
+                    epsilon=self.args.explore_epsilon, k=self.args.num_back_forth_steps, it=self.args.num_iterations, deterministic=True)
               else:
                 with torch.no_grad():
                   explore_data = self.model.batch_fwd_sample_ls(online_bsize,
-                    epsilon=self.args.explore_epsilon, k=self.args.num_back_forth_steps, i=self.args.num_iterations, deterministic=False)
+                    epsilon=self.args.explore_epsilon, k=self.args.num_back_forth_steps, it=self.args.num_iterations, deterministic=False)
             else:
               with torch.no_grad():
                 explore_data = self.model.batch_fwd_sample(online_bsize,
@@ -207,11 +207,11 @@ class Trainer:
             if self.args.filtering == "deterministic":
               with torch.no_grad():
                 explore_data = self.model.batch_fwd_sample_ls(online_bsize,
-                  epsilon=self.args.explore_epsilon, k=self.args.num_back_forth_steps, i=self.args.num_iterations, deterministic=True)
+                  epsilon=self.args.explore_epsilon, k=self.args.num_back_forth_steps, it=self.args.num_iterations, deterministic=True)
             else:
               with torch.no_grad():
                 explore_data = self.model.batch_fwd_sample_ls(online_bsize,
-                  epsilon=self.args.explore_epsilon, k=self.args.num_back_forth_steps, i=self.args.num_iterations, deterministic=False)
+                  epsilon=self.args.explore_epsilon, k=self.args.num_back_forth_steps, it=self.args.num_iterations, deterministic=False)
           else:
             with torch.no_grad():
               explore_data = self.model.batch_fwd_sample(online_bsize,

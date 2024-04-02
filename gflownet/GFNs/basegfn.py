@@ -169,10 +169,10 @@ class BaseTBGFlowNet():
       list_exps.append(exp)
     return list_exps
   
-  def batch_fwd_sample_ls(self, n, epsilon=0.0, uniform=False, k=4, i=3, deterministic=False):
+  def batch_fwd_sample_ls(self, n, epsilon=0.0, uniform=False, k=4, it=3, deterministic=False):
     assert k > 0
-    assert n % (i+1) == 0
-    batch_size = n // (i+1)
+    assert n % (it+1) == 0
+    batch_size = n // (it+1)
     
     # Sample Trajectory
     print('Sampling dataset ...')
@@ -213,7 +213,7 @@ class BaseTBGFlowNet():
     # Local Search
     print('Local Search...')
     update_success_rates = []
-    for _ in range(i):
+    for _ in range(it):
       # Construct new complete trajectories via deconstruction / reconstruction
       new_complete_trajs, delta_logp_traj = self.backforth_sample(complete_trajs, k)
       new_rewards = []
