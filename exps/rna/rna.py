@@ -4,7 +4,9 @@
     Start from scratch
 '''
 
-import copy, pickle, functools
+import random
+import pickle, functools
+from copy import deepcopy
 import numpy as np
 from tqdm import tqdm
 import pandas as pd
@@ -33,12 +35,15 @@ def dynamic_inherit_mdp(base, args):
       
       print(f'Loading data ...')
       problem = flexs.landscapes.rna.registry()[f'L{self.args.forced_stop_len}_RNA{self.rna_task}']
+      print(problem)
       self.proxy_model = flexs.landscapes.RNABinding(**problem['params'])
       
-      allpreds_file = args.allpreds_file + f"{self.rna_task}.pkl"
-      with open(allpreds_file, 'rb') as f:
-        self.rewards = pickle.load(f)
-      print(problem)
+      if self.args.forced_stop_len == 14:
+        allpreds_file = args.allpreds_file + f'L{self.args.forced_stop_len}_RNA{self.rna_task}_allpreds.pkl'
+        with open(allpreds_file, 'rb') as f:
+          self.rewards = pickle.load(f)
+      else:
+        self.rewards = self.proxy_model.get_fitness(["".join(random.choices(self.alphabet, k=self.args.forced_stop_len)) for _ in range(5000)])
       
       # scale rewards
       py = np.array(list(self.rewards))
@@ -56,10 +61,14 @@ def dynamic_inherit_mdp(base, args):
       self.scaled_rewards = py
       
       # modes
-      mode_file = args.mode_file + f"{self.rna_task}.pkl"
-      with open(mode_file, 'rb') as f:
-        self.modes = pickle.load(f)
-      print(f"Found num modes: {len(self.modes)}")
+      if self.args.forced_stop_len == 14:
+        mode_file = args.mode_file + f'L{self.args.forced_stop_len}_RNA{self.rna_task}_modes.pkl'
+        with open(mode_file, 'rb') as f:
+          self.modes = pickle.load(f)
+        print(f"Found num modes: {len(self.modes)}")
+      else:
+        mode_percentile = 0.005
+        self.mode_r_threshold = np.percentile(py, 100*(1-mode_percentile))
 
     # Core
     def reward(self, x):
@@ -70,9 +79,28 @@ def dynamic_inherit_mdp(base, args):
       r = r ** self.REWARD_EXP
       r = r * self.scale
       return r
-
+    
+    def get_neighbors(self, x):
+      neighbors = []
+      for i in range(self.args.forced_stop_len):
+        for j in self.alphabet:
+          x_ = list(deepcopy(x))
+          if x_[i] != j:
+            x_[i] = j
+            neighbors.append("".join(x_))
+      return neighbors
+            
     def is_mode(self, x, r):
-      return x.content in self.modes
+      if self.args.forced_stop_len == 14:
+        return x.content in self.modes
+      else:
+        if r >= self.mode_r_threshold:
+          for neighbor in self.get_neighbors(x.content):
+            if r < self.proxy_model.get_fitness([neighbor]).item():
+              return False
+          return True
+        else:
+          return False
     
     def unnormalize(self, r):
       r = r / self.scale

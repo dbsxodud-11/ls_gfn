@@ -5,7 +5,7 @@ setting: 'rna'
 # wandb
 wandb_mode: 'online'   # 'online', 'disabled'
 wandb_project: 'sub_rna'
-wandb_entity: 'anonymous'
+wandb_entity: 'dbsxodud'
 
 
 # model
@@ -99,6 +99,6 @@ reward_exp: 8
 
 
 # experiment-specific settings
-allpreds_file: datasets/rna/rna_allpreds
-mode_file: datasets/rna/modes_rna
+allpreds_file: datasets/rna/
+mode_file: datasets/rna/
 forced_stop_len: 14

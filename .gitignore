@@ -4,7 +4,7 @@ __pycache__
 # large data files
 block_18_stop6.pkl
 sehstr_gbtr_allpreds.pkl
-rna_allpreds*.pkl
+*allpreds.pkl
 
 logs/
 wandb/
