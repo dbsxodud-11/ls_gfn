@@ -17,12 +17,14 @@ import options
 import numpy as np
 from attrdict import AttrDict
 
+from exps.bag import bag
 from exps.qm9str import qm9str
 from exps.sehstr import sehstr
 from exps.tfbind8 import tfbind8_oracle
 from exps.rna import rna
 
 mode_seeking = {
+    'bag': lambda args: bag.mode_seeking(args),
     'qm9str': lambda args: qm9str.mode_seeking(args),
     'sehstr': lambda args: sehstr.mode_seeking(args),
     'tfbind8': lambda args: tfbind8_oracle.mode_seeking(args),

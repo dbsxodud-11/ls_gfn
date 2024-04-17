@@ -29,6 +29,7 @@ def parse_args():
       5. Use args = AttrDict(wandb.config) in code
   """
   setting_folds = {
+    'bag': 'exps/bag/settings.yaml',
     'qm9str': 'exps/qm9str/settings.yaml',
     'sehstr': 'exps/sehstr/settings.yaml',
     'tfbind8': 'exps/tfbind8/settings.yaml',
