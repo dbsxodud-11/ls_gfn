@@ -1,6 +1,7 @@
 # LS-GFN
 Official Code for Local Search GFlowNets
 
+*Note: I find that there are some differences in terms of mode metrics and hyperparameters. Now it is fixed.*
 
 ### Environment Setup
 Please first install your conda with yaml file and install the pyg (of pytorch 1.13). 
