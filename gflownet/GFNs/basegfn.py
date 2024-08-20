@@ -184,8 +184,8 @@ class BaseTBGFlowNet():
     while len(incomplete_trajs) > 0:
       inp = [t[-1] for t in incomplete_trajs]
       samples = self.fwd_sample(inp, epsilon=epsilon)
-      for i, sample in enumerate(samples):
-        incomplete_trajs[i].append(sample)
+      for i_, sample in enumerate(samples):
+        incomplete_trajs[i_].append(sample)
         
       # Remove complete trajs that hit leaf
       temp_incomplete = []
@@ -238,11 +238,11 @@ class BaseTBGFlowNet():
         # Stochastic Filtering
         update_dist = torch.distributions.Bernoulli(logits=lp_update + delta_logp_traj)
         updates = update_dist.sample()
-      for i in range(batch_size):
-        if updates[i] == 1:
-          xs[i] = new_xs[i]
-          log_rewards[i] = new_log_rewards[i]
-          complete_trajs[i] = new_complete_trajs[i]
+      for i_ in range(batch_size):
+        if updates[i_] == 1:
+          xs[i_] = new_xs[i_]
+          log_rewards[i_] = new_log_rewards[i_]
+          complete_trajs[i_] = new_complete_trajs[i_]
       update_success_rate = updates.mean().item()
       update_success_rates.append(update_success_rate)
       

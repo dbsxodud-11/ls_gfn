@@ -52,9 +52,17 @@ def dynamic_inherit_mdp(base, args):
       self.rs_all = [y for x, y in self.scaled_oracle.items()]
 
       # Modes
-      with open('datasets/tfbind8/modes_tfbind8.pkl', 'rb') as f:
-        modes = pickle.load(f)
-      self.modes = set([self.state(munge(x), is_leaf=True) for x in modes])
+      if args.mode_metric != "threshold":
+        with open('datasets/tfbind8/modes_tfbind8.pkl', 'rb') as f:
+          modes = pickle.load(f)
+        self.modes = set([self.state(munge(x), is_leaf=True) for x in modes])
+      else:
+        mode_percentile = args.mode_percentile
+        self.mode_r_threshold = np.percentile(py, 100*(1-mode_percentile))
+        num_modes = int(len(self.scaled_oracle) * mode_percentile)
+        sorted_xs = sorted(self.scaled_oracle, key=self.scaled_oracle.get)
+        self.modes = sorted_xs[-num_modes:]
+      print(f"Found num modes: {len(self.modes)}")
 
     # Core
     def reward(self, x):

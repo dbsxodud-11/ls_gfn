@@ -83,7 +83,8 @@ guide_sampling_temperature: 3.0
 mdp_style: 'pa' # ['insert', 'pa']
 mode_info_file: datasets/rna/
 monitor_info_file: datasets/rna/
-mode_metric: 'default' # hamming_ball1, hamming_ball2
+mode_metric: 'hamming_ball1' # hamming_ball1, hamming_ball2, threshold
+mode_percentile: 0.005
 forced_stop_len: 14
 
 # local search related arguments

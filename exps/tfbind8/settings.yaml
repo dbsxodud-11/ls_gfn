@@ -76,6 +76,8 @@ guide_sampling_temperature: 3.0
 
 # experiment-specific
 mdp_style: 'pa' # ['insert', 'pa']
+mode_metric: 'default' # threshold
+mode_percentile: 0.005
 forced_stop_len: 8
 
 # local search related arguments

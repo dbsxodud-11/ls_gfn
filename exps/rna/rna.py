@@ -1,9 +1,9 @@
 '''
-    GFP
-    Transformer Proxy
+    RNA
+    from flexs
     Start from scratch
 '''
-
+import os
 import copy, pickle, functools
 import numpy as np
 from tqdm import tqdm
@@ -32,7 +32,7 @@ def dynamic_inherit_mdp(base, args):
       self.rna_task = args.rna_task
       self.rna_length = args.rna_length
       
-      self.mode_info_file = args.mode_info_file + f"L{self.rna_length}_RNA{self.rna_task}/mode_info.pkl"
+      mode_info_file = args.mode_info_file + f"L{self.rna_length}_RNA{self.rna_task}/mode_info.pkl"
       self.monitor_info_file = args.monitor_info_file + f"L{self.rna_length}_RNA{self.rna_task}/monitor_info.pkl"
       
       print(f'Loading data ...')
@@ -41,28 +41,48 @@ def dynamic_inherit_mdp(base, args):
       print(problem)
       
       # define modes as top % of xhashes and distance metrics
-      with open(self.mode_info_file, 'rb') as f:
-        mode_info = pickle.load(f)
-      if args.mode_metric == 'default':
-        self.modes = mode_info['modes']
-      elif args.mode_metric == 'hamming_ball1':
-        self.modes = mode_info['modes_hamming_ball1']
-      elif args.mode_metric == 'hamming_ball2':
-        self.modes = mode_info['modes_hamming_ball2']
-      else:
-        raise NotImplementedError
-      print(f"Found num modes: {len(self.modes)}")
+      self.mode_metric = args.mode_metric
+      if args.mode_metric != "threshold":
+        with open(mode_info_file, 'rb') as f:
+          mode_info = pickle.load(f)
+        if args.mode_metric == 'default':
+          self.modes = mode_info['modes']
+        elif args.mode_metric == 'hamming_ball1':
+          self.modes = mode_info['modes_hamming_ball1']
+        elif args.mode_metric == 'hamming_ball2':
+          self.modes = mode_info['modes_hamming_ball2']
+        else:
+          raise NotImplementedError
+        print(f"Found num modes: {len(self.modes)}")
 
-      py = np.concatenate([self.oracle.get_fitness([x]) for x in tqdm(self.modes)])
-      self.SCALE_REWARD_MIN = args.scale_reward_min
-      self.SCALE_REWARD_MAX = args.scale_reward_max
-      self.REWARD_EXP = args.beta
-      self.REWARD_MAX = max(py)
-      
-      py = np.maximum(py, self.SCALE_REWARD_MIN)
-      py = py ** self.REWARD_EXP
-      self.scale = self.SCALE_REWARD_MAX / max(py)
-      py = py * self.scale
+        py = np.concatenate([self.oracle.get_fitness([x]) for x in tqdm(self.modes)])
+        self.SCALE_REWARD_MIN = args.scale_reward_min
+        self.SCALE_REWARD_MAX = args.scale_reward_max
+        self.REWARD_EXP = args.beta
+        self.REWARD_MAX = max(py)
+        
+        py = np.maximum(py, self.SCALE_REWARD_MIN)
+        py = py ** self.REWARD_EXP
+        self.scale = self.SCALE_REWARD_MAX / max(py)
+        py = py * self.scale
+        
+      else:
+        with open(self.monitor_info_file, 'rb') as f:
+          self.monitor_info = pickle.load(f)
+        py = self.monitor_info['ad_samples']
+
+        self.SCALE_REWARD_MIN = args.scale_reward_min
+        self.SCALE_REWARD_MAX = args.scale_reward_max
+        self.REWARD_EXP = args.beta
+        self.REWARD_MAX = max(py)
+
+        py = np.maximum(py, self.SCALE_REWARD_MIN)
+        py = py ** self.REWARD_EXP
+        self.scale = self.SCALE_REWARD_MAX / max(py)
+        py = py * self.scale
+        
+        mode_percentile = args.mode_percentile
+        self.mode_r_threshold = np.percentile(py, 100*(1-mode_percentile))
 
     # Core
     def reward(self, x):
@@ -75,7 +95,10 @@ def dynamic_inherit_mdp(base, args):
       return r
 
     def is_mode(self, x, r):
-      return x.content in self.modes
+      if self.mode_metric == "threshold":
+        return r >= self.mode_r_threshold
+      else: 
+        return x.content in self.modes
     
     def unnormalize(self, r):
       r = r / self.scale

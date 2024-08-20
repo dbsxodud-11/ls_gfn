@@ -1,6 +1,7 @@
 """
   qm9 as string
 """
+import os
 import pickle, functools
 import numpy as np
 from tqdm import tqdm
@@ -46,16 +47,23 @@ class QM9stringMDP(molstrmdp.MolStrMDP):
     assert min(self.scaled_oracle.values()) > 0
 
     # define modes as top % of xhashes and diversity metrics
-    with open(mode_info_file, 'rb') as f:
-      mode_info = pickle.load(f)
-    if args.mode_metric == 'default':
-      self.modes = mode_info['modes']
-    elif args.mode_metric == 'div_threshold_05':
-      self.modes = mode_info['modes_div_threshold_05']
-    elif args.mode_metric == 'div_threshold_075':
-      self.modes = mode_info['modes_div_threshold_075']
+    if args.mode_metric != "threshold":
+      with open(mode_info_file, 'rb') as f:
+        mode_info = pickle.load(f)
+      if args.mode_metric == 'default':
+        self.modes = mode_info['modes']
+      elif args.mode_metric == 'div_threshold_05':
+        self.modes = mode_info['modes_div_threshold_05']
+      elif args.mode_metric == 'div_threshold_075':
+        self.modes = mode_info['modes_div_threshold_075']
+      else:
+        raise NotImplementedError
     else:
-      raise NotImplementedError
+      mode_percentile = args.mode_percentile
+      self.mode_r_threshold = np.percentile(py, 100*(1-mode_percentile))
+      num_modes = int(len(self.scaled_oracle) * mode_percentile)
+      sorted_xs = sorted(self.scaled_oracle, key=self.scaled_oracle.get)
+      self.modes = sorted_xs[-num_modes:]
     print(f"Found num modes: {len(self.modes)}")
 
   # Core

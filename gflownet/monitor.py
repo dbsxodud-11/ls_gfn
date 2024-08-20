@@ -227,8 +227,10 @@ class Monitor:
 
     if self.is_mode_f is not None:
       unique_modes = set(x for x, r in zip(xs, scaled_rewards) if self.is_mode_f(x, r))
+      real_unique_modes = set(x for x, r in allXtoR.items() if self.is_mode_f(x, r))
       tolog.update({
         f'{name} - Num modes': len(unique_modes),
+        f'{name} - Num real modes': len(real_unique_modes),
       })
     
     # if name == 'recent' and log_slow:
@@ -240,8 +242,8 @@ class Monitor:
     if len(scaled_rewards) > 0:
       mean_diff = np.mean(scaled_rewards) - self.target.expected_reward 
       rel_error = mean_diff / self.target.expected_reward
-      ad_score = anderson_darling(scaled_rewards, self.target.ad_samples)
-      tolog[f'{name} - Anderson-Darling statistic'] = ad_score
+      # ad_score = anderson_darling(scaled_rewards, self.target.ad_samples)
+      # tolog[f'{name} - Anderson-Darling statistic'] = ad_score
       tolog[f'{name} - mean error to target'] = mean_diff
       tolog[f'{name} - mean sq error to target'] = mean_diff**2
       tolog[f'{name} - relative mean error to target'] = rel_error

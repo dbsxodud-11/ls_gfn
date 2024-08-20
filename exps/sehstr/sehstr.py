@@ -1,6 +1,7 @@
 """
   seh as string
 """
+import os
 import pickle, functools
 import numpy as np
 from tqdm import tqdm
@@ -22,7 +23,8 @@ class SEHstringMDP(molstrmdp.MolStrMDP):
   def __init__(self, args):
     super().__init__(args)
     self.args = args
-
+    
+    mode_info_file = args.mode_info_file
     assert args.blocks_file == 'datasets/sehstr/block_18.json', 'ERROR - x_to_r and rewards are designed for block_18.json'
 
     self.proxy_model = gbr_proxy.sEH_GBR_Proxy(args)
@@ -46,8 +48,13 @@ class SEHstringMDP(molstrmdp.MolStrMDP):
     self.scaled_rewards = py
 
     # define modes as top % of xhashes.
-    mode_percentile = 0.0005
-    self.mode_r_threshold = np.percentile(py, 100*(1-mode_percentile))
+    if args.mode_metric != "threshold":
+      with open(mode_info_file, 'rb') as f:
+        self.modes = pickle.load(f)
+      print(f"Found num modes: {len(self.modes)}")
+    else:
+      mode_percentile = args.mode_percentile
+      self.mode_r_threshold = np.percentile(py, 100*(1-mode_percentile))
 
   # Core
   @functools.lru_cache(maxsize=None)
@@ -60,7 +67,10 @@ class SEHstringMDP(molstrmdp.MolStrMDP):
     return r
 
   def is_mode(self, x, r):
-    return r >= self.mode_r_threshold
+    if self.args.mode_metric == "threshold":
+      return r >= self.mode_r_threshold
+    else:
+      return x.content in self.modes
   
   def unnormalize(self, r):
       r = r / self.scale

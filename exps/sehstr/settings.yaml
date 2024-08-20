@@ -77,6 +77,9 @@ guide_sampling_temperature: 1.0
 
 # experiment-specific settings
 blocks_file: datasets/sehstr/block_18.json
+mode_info_file: datasets/sehstr/mode_info.pkl
+mode_metric: threshold # div_threshold_05
+mode_percentile: 0.0005
 forced_stop_len: 6
 
 # local search related arguments

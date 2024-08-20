@@ -79,7 +79,8 @@ guide_sampling_temperature: 1.0
 blocks_file: datasets/qm9str/block_qm9str_v1.json
 x_to_r_file: datasets/qm9str/block_qm9str_v1_s5.pkl
 mode_info_file: datasets/qm9str/mode_info.pkl
-mode_metric: 'default' # div_threshold_05, div_threshold_075 
+mode_metric: threshold # div_threshold_05, div_threshold_075
+mode_percentile: 0.005
 forced_stop_len: 5
 
 # local search related arguments
