@@ -1,7 +1,8 @@
 # LS-GFN
 Official Code for Local Search GFlowNets
 
-*Note: I find that there are some differences in terms of mode metrics and hyperparameters. Now it is fixed.*
+*Note (2025.02.27): I find that there are some errors in generating modes of RNA-binding tasks. I updated the files and also attached a Python file for generating modes. You can also find the updated experiment results based on the updated mode file below*
+> ![output.png](https://i.postimg.cc/t4fh3mJP/output.png)
 
 ### Environment Setup
 Please first install your conda with yaml file and install the pyg (of pytorch 1.13). 
